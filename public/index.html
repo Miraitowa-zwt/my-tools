@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>集合页文案撰写工具</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══ 顶部导航栏 ═══ -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-logo">✍️</span>
+      <span class="topbar-title">集合页文案工具 <span class="topbar-subtitle">Collection Copy Tool</span></span>
+    </div>
+    <div class="topbar-right">
+      <!-- 输出模式切换 -->
+      <div class="mode-toggle" id="modeToggle">
+        <button class="mode-btn active" data-mode="prompt">📋 Prompt 模式</button>
+        <button class="mode-btn" data-mode="api">⚡ API 模式</button>
+      </div>
+      <!-- 历史记录 -->
+      <button class="btn-ghost" id="btnHistory">🕘 历史记录</button>
+    </div>
+  </header>
+
+  <!-- ═══ 主体布局 ═══ -->
+  <main class="workspace">
+
+    <!-- ── 左侧：输入表单 ── -->
+    <aside class="panel panel-input">
+      <div class="panel-header">
+        <span class="panel-title">输入变量 <span class="en">Input Variables</span></span>
+        <div class="panel-actions">
+          <button class="btn-ghost btn-sm" id="btnSaveHistory">💾 保存至历史</button>
+          <button class="btn-ghost btn-sm" id="btnClearForm">🗑 清空</button>
+        </div>
+      </div>
+
+      <form id="mainForm" class="form-body" novalidate>
+
+        <!-- 品牌信息组 -->
+        <div class="form-group-label">品牌信息 <span class="en">Brand Info</span></div>
+
+        <div class="form-field">
+          <label for="brand_name">品牌名称 <span class="required">*</span></label>
+          <input type="text" id="brand_name" name="brand_name" placeholder="e.g. Nomad Goods" />
+        </div>
+
+        <div class="form-field">
+          <label for="website_url">品牌官网主域名 <span class="required">*</span></label>
+          <input type="url" id="website_url" name="website_url" placeholder="https://example.com" />
+        </div>
+
+        <!-- 集合页信息组 -->
+        <div class="form-group-label">集合页信息 <span class="en">Collection Info</span></div>
+
+        <div class="form-field">
+          <label for="collection_url">目标集合页 URL <span class="required">*</span></label>
+          <input type="url" id="collection_url" name="collection_url" placeholder="https://example.com/collections/..." />
+        </div>
+
+        <div class="form-field">
+          <label for="collection_topic">集合页核心主题 <span class="required">*</span></label>
+          <input type="text" id="collection_topic" name="collection_topic" placeholder="e.g. iPhone 16 Cases" />
+        </div>
+
+        <div class="form-field">
+          <label for="target_market">目标市场/地区 <span class="required">*</span></label>
+          <input type="text" id="target_market" name="target_market" placeholder="e.g. US, UK, Global" />
+        </div>
+
+        <div class="form-field">
+          <label for="output_language">输出语言 Output Language <span class="required">*</span></label>
+          <select id="output_language" name="output_language">
+            <option value="English">English（（英语）</option>
+            <option value="Spanish">Spanish（（西班牙语）</option>
+            <option value="French">French（（法语）</option>
+            <option value="German">German（（德语）</option>
+            <option value="Italian">Italian（（意大利语）</option>
+            <option value="Portuguese">Portuguese（（葡萄牙语）</option>
+            <option value="Japanese">Japanese（（日语）</option>
+            <option value="Korean">Korean（（韩语）</option>
+            <option value="Arabic">Arabic（（阿拉伯语）</option>
+            <option value="Dutch">Dutch（（荷兰语）</option>
+            <option value="Russian">Russian（（俄语）</option>
+            <option value="custom">自定义...</option>
+          </select>
+        </div>
+
+        <div class="form-field hidden" id="customLanguageField">
+          <label for="custom_language">自定义语言名称（请用英文填写，如：Swedish）</label>
+          <input type="text" id="custom_language" name="custom_language" placeholder="e.g. Swedish" />
+        </div>
+
+        <!-- 关键词组 -->
+        <div class="form-group-label">关键词 <span class="en">Keywords</span></div>
+
+        <div class="form-field">
+          <label for="keywords">
+            关键词列表（5–10个，逗号分隔）<span class="required">*</span>
+            <button type="button" class="btn-inline" id="btnOpenKeywords">📋 关键词总表</button>
+          </label>
+          <textarea id="keywords" name="keywords" rows="3" placeholder="keyword 1, keyword 2, keyword 3"></textarea>
+          <div class="field-hint" id="keywordCount">已输入 0 个关键词</div>
+        </div>
+
+        <!-- 竞品与补充信息组 -->
+        <div class="form-group-label">竞品 & 补充信息 <span class="en">Competitors & Extra</span></div>
+
+        <div class="form-field">
+          <label for="competitor_urls">竞品集合页 URL（选填，最多3个，每行一个）</label>
+          <textarea id="competitor_urls" name="competitor_urls" rows="3" placeholder="https://competitor1.com/collections/..."></textarea>
+        </div>
+
+        <div class="form-field">
+          <label for="product_links">产品链接列表 Product Links <span class="en">（每行一个 URL，选填）</span></label>
+          <textarea id="product_links" name="product_links" rows="4" placeholder="https://example.com/products/product-1&#10;https://example.com/products/product-2"></textarea>
+          <div class="field-hint" id="productCountHint">请输入该集合页的产品详情页链接，每行一个（选填）</div>
+        </div>
+
+        <div class="form-field">
+          <label for="brand_info">补充品牌信息（选填）</label>
+          <textarea id="brand_info" name="brand_info" rows="4" placeholder="品牌背景、特殊卖点、语气要求等..."></textarea>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="form-actions">
+          <button type="button" class="btn-primary" id="btnGenerate">
+            <span id="btnGenerateText">生成文案</span>
+          </button>
+        </div>
+
+      </form>
+    </aside>
+
+    <!-- ── 右侧：输出区域 ── -->
+    <section class="panel panel-output">
+      <div class="panel-header">
+        <span class="panel-title">输出结果 <span class="en">Output</span></span>
+        <div class="output-tabs" id="outputTabs">
+          <button class="tab-btn active" data-tab="en" id="tabBtnLang">🇺🇸 英文版</button>
+          <button class="tab-btn" data-tab="zh">🇨🇳 中文版</button>
+          <button class="tab-btn" data-tab="html">🔧 HTML</button>
+          <button class="tab-btn" data-tab="prompt">📋 Prompt</button>
+        </div>
+      </div>
+
+      <!-- 英文版 Tab -->
+      <div class="tab-content active" id="tab-en">
+        <div class="output-toolbar">
+          <span class="output-label">英文富文本 English Copy</span>
+          <button class="btn-copy" data-target="outputEnRaw">复制 Markdown</button>
+        </div>
+        <div class="output-preview markdown-body" id="outputEnPreview">
+          <div class="output-placeholder">
+            <div class="placeholder-icon">✍️</div>
+            <div class="placeholder-text">填写左侧变量后点击「生成文案」</div>
+            <div class="placeholder-sub">Fill in the variables and click Generate</div>
+          </div>
+        </div>
+        <textarea class="output-raw hidden" id="outputEnRaw" readonly></textarea>
+      </div>
+
+      <!-- 中文版 Tab -->
+      <div class="tab-content" id="tab-zh">
+        <div class="output-toolbar">
+          <span class="output-label">中文对照版 Chinese Copy</span>
+          <button class="btn-copy" data-target="outputZhRaw">复制 Markdown</button>
+        </div>
+        <div class="output-preview markdown-body" id="outputZhPreview">
+          <div class="output-placeholder">
+            <div class="placeholder-icon">📝</div>
+            <div class="placeholder-text">中文对照版将在生成后显示</div>
+          </div>
+        </div>
+        <textarea class="output-raw hidden" id="outputZhRaw" readonly></textarea>
+      </div>
+
+      <!-- HTML Tab -->
+      <div class="tab-content" id="tab-html">
+        <div class="output-toolbar">
+          <span class="output-label">HTML 片段（可嵌入 Shopify）</span>
+          <button class="btn-copy" data-target="outputHtml">复制 HTML</button>
+        </div>
+        <pre class="output-code" id="outputHtml"><code><!-- HTML 片段将在生成后显示 --></code></pre>
+      </div>
+
+      <!-- Prompt Tab -->
+      <div class="tab-content" id="tab-prompt">
+        <div class="output-toolbar">
+          <span class="output-label">完整 Prompt（可复制后手动使用）</span>
+          <button class="btn-copy" data-target="outputPrompt">复制 Prompt</button>
+        </div>
+        <textarea class="output-prompt" id="outputPrompt" readonly placeholder="Prompt 将在生成后显示..."></textarea>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ═══ 底部状态栏 ═══ -->
+  <footer class="statusbar" id="statusbar">
+    <span class="status-dot" id="statusDot"></span>
+    <span class="status-text" id="statusText">就绪 Ready就绪 Ready</span>
+    <div class="scrape-progress" id="scrapeProgress"></div>
+  </footer>
+
+  <!-- ═══ 预检确认弹窗 ═══ -->
+  <div class="modal-overlay hidden" id="modalConfirm">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">📋 生成前确认 Pre-flight Check</span>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <!-- 动态填充 -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="btnModalCancel">取消</button>
+        <button class="btn-primary" id="btnModalConfirm">确认生成 Generate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 手动补充弹窗 ═══ -->
+  <div class="modal-overlay hidden" id="modalManual">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <span class="modal-title">⚠️ 抓取失败 — 请手动补充内容</span>
+        <button class="modal-close" id="modalManualClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="manual-url" id="manualUrl"></div>
+        <div class="field-hint">请将该页面的文本内容粘贴至以下（可从浏览器「查看页面源代码」或直接复制页面文字）</div>
+        <textarea class="manual-textarea" id="manualContent" rows="12" placeholder="粘贴页面内容..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="btnManualSkip">跳过此页面</button>
+        <button class="btn-primary" id="btnManualSubmit">提交内容</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 历史记录面板 ═══ -->
+  <div class="modal-overlay hidden" id="modalHistory">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <span class="modal-title">🕘 历史记录 History</span>
+        <button class="modal-close" id="modalHistoryClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="history-list" id="historyList">
+          <!-- 动态填充 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 关键词总表抽屉 ═══ -->
+  <div class="drawer-overlay hidden" id="drawerOverlay"></div>
+  <div class="drawer hidden" id="keywordsDrawer">
+    <div class="drawer-header">
+      <span class="drawer-title">📋 关键词总表 Keywords Pool</span>
+      <button class="modal-close" id="drawerClose">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-hint">编辑关键词总表，勾选后可添加至当前关键词列表。<br>批量添加支持：用逗号或换行分隔多个关键词。<br><span class="en">修改不会自动保存，需点击「保存至历史」。</span></div>
+      <div class="keywords-pool-actions">
+        <button class="btn-ghost btn-sm" id="btnSelectAll">全选</button>
+        <button class="btn-ghost btn-sm" id="btnClearSelection">取消选择</button>
+        <button class="btn-ghost btn-sm" id="btnCopyPool">一键复制全部</button>
+      </div>
+      <div class="keywords-pool-list" id="keywordsPoolList">
+        <!-- 动态填充 -->
+      </div>
+      <div class="keywords-pool-add">
+        <textarea id="newKeywordInput" rows="2" placeholder="添加新关键词（支持逗号或换行分隔批量添加）..."></textarea>
+        <button class="btn-ghost btn-sm" id="btnAddKeyword">添加</button>
+      </div>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn-ghost" id="btnDrawerCancel">关闭</button>
+      <button class="btn-primary" id="btnAddSelected">添加选中至关键词列表</button>
+    </div>
+  </div>
+
+  <!-- marked.js for Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
