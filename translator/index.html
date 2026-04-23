@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>多语言翻译器</title>
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --bg-card: #ffffff;
+      --text-primary: #1a1a1a;
+      --text-secondary: #5f6368;
+      --text-muted: #80868b;
+      --border-color: #dadce0;
+      --accent-color: #1a73e8;
+      --accent-hover: #1557b0;
+      --accent-light: rgba(26, 115, 232, 0.1);
+      --error-color: #d93025;
+      --error-bg: rgba(217, 48, 37, 0.1);
+      --success-color: #188038;
+      --success-bg: rgba(24, 128, 56, 0.1);
+      --warning-color: #f29900;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #1e1e1e;
+      --bg-secondary: #2d2d2d;
+      --bg-card: #252525;
+      --bg-hover: #383838;
+      --text-primary: #e8eaed;
+      --text-secondary: #9aa0a6;
+      --text-muted: #5f6368;
+      --border-color: #3c4043;
+      --accent-color: #8ab4f8;
+      --accent-hover: #aecbfa;
+      --accent-light: rgba(138, 180, 248, 0.15);
+      --error-color: #f28b82;
+      --error-bg: rgba(242, 139, 130, 0.15);
+      --success-color: #81c995;
+      --success-bg: rgba(129, 201, 149, 0.15);
+      --warning-color: #fcc934;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      transition: background 0.3s ease;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0 24px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 24px;
+    }
+
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { font-size: 32px; }
+    .logo-text h1 { font-size: 24px; font-weight: 600; }
+    .logo-text p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+    .header-actions { display: flex; gap: 8px; }
+
+    .icon-btn {
+      width: 40px; height: 40px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      transition: all 0.2s;
+    }
+
+    .icon-btn:hover { background: var(--bg-hover); border-color: var(--accent-color); }
+    .icon-btn.has-key { border-color: var(--success-color); background: var(--success-bg); color: var(--success-color); }
+
+    .language-bar {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 16px; flex-wrap: wrap;
+    }
+
+    .lang-wrapper { flex: 1; min-width: 150px; position: relative; }
+
+    .language-select {
+      width: 100%;
+      padding: 12px 36px 12px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 14px;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235f6368' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+    }
+
+    .language-select:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px var(--accent-light); }
+
+    .swap-btn {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--accent-color);
+      cursor: pointer;
+      font-size: 20px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .swap-btn:hover { background: var(--accent-color); color: white; transform: rotate(180deg); }
+
+    .char-count {
+      font-size: 13px;
+      color: var(--text-secondary);
+      padding: 8px 12px;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+    }
+
+    .translation-area {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .input-card, .output-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .input-card:focus-within, .output-card:focus-within {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+    }
+
+    .card-title { font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; }
+    .card-btn { padding: 6px 10px; border: none; border-radius: 4px; background: transparent; color: var(--text-secondary); font-size: 12px; cursor: pointer; }
+    .card-btn:hover { background: var(--bg-hover); }
+
+    .input-card textarea {
+      width: 100%;
+      min-height: 300px;
+      padding: 16px;
+      border: none;
+      background: transparent;
+      color: var(--text-primary);
+      font-size: 16px;
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+    }
+
+    .input-card textarea::placeholder { color: var(--text-muted); }
+
+    .output-content {
+      min-height: 300px;
+      padding: 16px;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+    }
+
+    .output-content.placeholder {
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .output-content.placeholder-icon { font-size: 48px; opacity: 0.5; }
+
+    .action-bar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+    }
+
+    .btn-primary { background: var(--accent-color); color: white; }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-secondary { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); }
+    .btn-secondary:hover:not(:disabled) { background: var(--bg-hover); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid transparent;
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .history-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .history-header h3 { font-size: 15px; font-weight: 600; }
+    .clear-history {
+      font-size: 13px;
+      color: var(--text-secondary);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 6px;
+    }
+    .clear-history:hover { background: var(--bg-hover); color: var(--error-color); }
+
+    .history-list { display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .history-item:hover { background: var(--bg-hover); transform: translateX(4px); }
+    .history-item .source-text, .history-item .target-text { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .history-item .source-text { color: var(--text-primary); flex: 1; }
+    .history-item .arrow { color: var(--text-muted); flex-shrink: 0; }
+    .history-item .target-text { color: var(--text-secondary); flex: 1; }
+    .history-item .langs { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+    }
+
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+
+    .modal {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .modal-header h2 { font-size: 18px; font-weight: 600; }
+    .modal-close {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 10px; }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .form-group input:focus { border-color: var(--accent-color); box-shadow: 0 0 0 3px var(--accent-light); }
+    .form-group input::placeholder { color: var(--text-muted); }
+
+    .form-hint {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-sm);
+      line-height: 1.6;
+    }
+
+    .form-hint a { color: var(--accent-color); }
+    .form-hint code { background: var(--bg-hover); padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+
+    .modal-actions { display: flex; gap: 12px; justify-content: flex-end; }
+
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      padding: 14px 24px;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      z-index: 1001;
+      opacity: 0;
+      transition: all 0.3s;
+      font-size: 14px;
+      border: 1px solid var(--border-color);
+      max-width: 500px;
+      white-space: pre-wrap;
+    }
+
+    .toast.active { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.success { border-left: 4px solid var(--success-color); }
+    .toast.error { border-left: 4px solid var(--error-color); }
+    .toast.warning { border-left: 4px solid var(--warning-color); }
+
+    .status-bar {
+      background: var(--bg-secondary);
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      flex-wrap: wrap;
+    }
+
+    .status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--error-color);
+    }
+
+    .status-dot.online { background: var(--success-color); }
+    .status-dot.checking { background: var(--warning-color); animation: pulse 1s infinite; }
+
+    @keyframes pulse { 50% { opacity: 0.5; } }
+
+    .api-selector {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 16px;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-sm);
+    }
+
+    .api-option {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .api-option:hover { border-color: var(--accent-color); background: var(--bg-hover); }
+    .api-option.active { border-color: var(--accent-color); background: var(--accent-light); }
+    .api-option h4 { font-size: 14px; margin-bottom: 4px; }
+    .api-option p { font-size: 12px; color: var(--text-secondary); }
+
+    @media (max-width: 900px) {
+      .translation-area { grid-template-columns: 1fr; }
+      .input-card textarea, .output-content { min-height: 200px; }
+    }
+
+    @media (max-width: 640px) {
+      .container { padding: 16px; }
+      .header { flex-direction: column; gap: 16px; text-align: center; }
+      .logo { justify-content: center; }
+      .language-bar { flex-direction: column; }
+      .lang-wrapper { width: 100%; }
+      .swap-btn { transform: rotate(90deg); }
+      .swap-btn:hover { transform: rotate(270deg); }
+      .action-bar { flex-direction: column; }
+      .btn { width: 100%; justify-content: center; }
+      .api-selector { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">🌐</span>
+        <div class="logo-text">
+          <h1>多语言翻译器</h1>
+          <p>支持多种 API，国内可用</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="settingsBtn" title="设置">⚙️</button>
+        <button class="icon-btn" id="themeBtn" title="主题">🌙</button>
+      </div>
+    </header>
+
+    <div class="status-bar">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">检查网络...</span>
+      <span style="margin-left: auto; font-size: 12px; color: var(--text-muted);">
+        提示：如果无法访问 Google，请使用国内 API
+      </span>
+    </div>
+
+    <div class="api-selector">
+      <div class="api-option active" data-api="gemini" onclick="selectAPI('gemini')">
+        <h4>🌐 Google Gemini</h4>
+        <p>需要代理，gemini-2.0-flash 模型</p>
+      </div>
+      <div class="api-option" data-api="baidu" onclick="selectAPI('baidu')">
+        <h4>🇨🇳 百度翻译</h4>
+        <p>国内可用，需申请 API Key</p>
+      </div>
+      <div class="api-option" data-api="deeplx" onclick="selectAPI('deeplx')">
+        <h4>🚀 DeepLX</h4>
+        <p>免费 DeepL 代理，无需 Key</p>
+      </div>
+    </div>
+
+    <div class="language-bar">
+      <div class="lang-wrapper">
+        <select class="language-select" id="sourceLang">
+          <option value="en">英语</option>
+          <option value="zh-CN">中文（简体）</option>
+          <option value="zh-TW">中文（繁体）</option>
+          <option value="ja">日语</option>
+          <option value="ko">韩语</option>
+          <option value="es">西班牙语</option>
+          <option value="fr">法语</option>
+          <option value="de">德语</option>
+          <option value="it">意大利语</option>
+          <option value="pt">葡萄牙语</option>
+          <option value="ru">俄语</option>
+          <option value="ar">阿拉伯语</option>
+          <option value="hi">印地语</option>
+        </select>
+      </div>
+      <button class="swap-btn" id="swapBtn">⇄</button>
+      <div class="lang-wrapper">
+        <select class="language-select" id="targetLang">
+          <option value="zh-CN">中文（简体）</option>
+          <option value="zh-TW">中文（繁体）</option>
+          <option value="en">英语</option>
+          <option value="ja">日语</option>
+          <option value="ko">韩语</option>
+          <option value="es">西班牙语</option>
+          <option value="fr">法语</option>
+          <option value="de">德语</option>
+          <option value="it">意大利语</option>
+          <option value="pt">葡萄牙语</option>
+          <option value="ru">俄语</option>
+          <option value="ar">阿拉伯语</option>
+          <option value="hi">印地语</option>
+        </select>
+      </div>
+      <div class="char-count" id="charCount">字符：0 / 50000</div>
+    </div>
+
+    <div class="translation-area">
+      <div class="input-card">
+        <div class="card-header">
+          <span class="card-title">原文</span>
+          <button class="card-btn" id="clearInputBtn">🗑 清空</button>
+        </div>
+        <textarea id="inputText" placeholder="请输入要翻译的内容..."></textarea>
+      </div>
+      <div class="output-card">
+        <div class="card-header">
+          <span class="card-title">译文</span>
+          <button class="card-btn" id="copyOutputBtn">📋 复制</button>
+        </div>
+        <div class="output-content placeholder" id="outputText">
+          <div class="placeholder-icon">🌐</div>
+          <div>翻译结果将显示在这里</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-secondary" id="copyBtn">📋 复制译文</button>
+      <button class="btn btn-primary" id="translateBtn">🔄 翻译</button>
+    </div>
+
+    <div class="history-section">
+      <div class="history-header">
+        <h3>📜 历史记录</h3>
+        <button class="clear-history" id="clearHistoryBtn">清空</button>
+      </div>
+      <div class="history-list" id="historyList">
+        <div style="text-align: center; color: var(--text-muted); padding: 32px;">
+          <div style="font-size: 32px; margin-bottom: 8px;">📭</div>
+          暂无历史记录
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>⚙️ API 设置</h2>
+        <button class="modal-close" id="closeModalBtn">✕</button>
+      </div>
+      
+      <div class="form-group" id="geminiSettings">
+        <label for="geminiKey">Google Gemini API Key</label>
+        <input type="password" id="geminiKey" placeholder="输入 Gemini API Key">
+        <div class="form-hint">
+          💡 获取：
+          <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>
+          <br>⚠️ 模型：gemini-2.0-flash (最新)
+          <br>⚠️ 需要代理才能访问
+        </div>
+      </div>
+
+      <div class="form-group" id="baiduSettings" style="display: none;">
+        <label for="baiduAppid">百度翻译 APP ID</label>
+        <input type="text" id="baiduAppid" placeholder="输入 APP ID">
+        <label for="baiduKey" style="margin-top: 10px; display: block;">百度翻译密钥</label>
+        <input type="password" id="baiduKey" placeholder="输入密钥">
+        <div class="form-hint">
+          💡 获取：
+          <a href="https://fanyi-api.baidu.com/" target="_blank">fanyi-api.baidu.com</a>
+          <br>✅ 国内可直接访问
+        </div>
+      </div>
+
+      <div class="form-group" id="deeplxSettings" style="display: none;">
+        <label for="deeplxUrl">DeepLX 服务地址</label>
+        <input type="text" id="deeplxUrl" placeholder="默认：https://api.deeplx.org/abcd1234/" value="https://api.deeplx.org/abcd1234/">
+        <div class="form-hint">
+          💡 公共 API：
+          <code>https://api.deeplx.org/abcd1234/</code>
+          <br>🔧 或自建：
+          <a href="https://github.com/OwO-Network/DeepLX" target="_blank">github.com/OwO-Network/DeepLX</a>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="cancelBtn">取消</button>
+        <button class="btn btn-primary" id="saveSettingsBtn">💾 保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const LANG_NAMES = {
+      'en': '英语', 'zh-CN': '中文', 'zh-TW': '中文（繁体）',
+      'ja': '日语', 'ko': '韩语', 'es': '西班牙语', 'fr': '法语',
+      'de': '德语', 'it': '意大利语', 'pt': '葡萄牙语',
+      'ru': '俄语', 'ar': '阿拉伯语', 'hi': '印地语'
+    };
+
+    // 百度翻译语言代码
+    const BAIDU_LANG = {
+      'zh-CN': 'zh', 'zh-TW': 'cht', 'en': 'en', 'ja': 'jp', 'ko': 'kor',
+      'es': 'spa', 'fr': 'fra', 'de': 'de', 'it': 'it', 'pt': 'pt',
+      'ru': 'ru', 'ar': 'ara', 'hi': 'hi'
+    };
+
+    let currentAPI = localStorage.getItem('translate_api') || 'gemini';
+    let apis = {
+      gemini: {
+        key: localStorage.getItem('gemini_api_key') || ''
+      },
+      baidu: {
+        appid: localStorage.getItem('baidu_appid') || '',
+        key: localStorage.getItem('baidu_key') || ''
+      },
+      deeplx: {
+        url: localStorage.getItem('deeplx_url') || 'https://api.deeplx.org/abcd1234/'
+      }
+    };
+
+    let translationCache = new Map();
+    let history = JSON.parse(localStorage.getItem('translation_history') || '[]');
+    let isTranslating = false;
+    let lastTranslationResult = '';
+    let abortController = null;
+
+    const $ = id => document.getElementById(id);
+    const inputText = $('inputText');
+    const outputText = $('outputText');
+    const sourceLang = $('sourceLang');
+    const targetLang = $('targetLang');
+    const charCount = $('charCount');
+    const translateBtn = $('translateBtn');
+    const copyBtn = $('copyBtn');
+    const copyOutputBtn = $('copyOutputBtn');
+    const swapBtn = $('swapBtn');
+    const settingsBtn = $('settingsBtn');
+    const themeBtn = $('themeBtn');
+    const settingsModal = $('settingsModal');
+    const closeModalBtn = $('closeModalBtn');
+    const saveSettingsBtn = $('saveSettingsBtn');
+    const cancelBtn = $('cancelBtn');
+    const toast = $('toast');
+    const historyList = $('historyList');
+    const clearHistoryBtn = $('clearHistoryBtn');
+    const clearInputBtn = $('clearInputBtn');
+    const statusDot = $('statusDot');
+    const statusText = $('statusText');
+
+    function init() {
+      const theme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+      $('themeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
+      
+      selectAPI(currentAPI);
+      renderHistory();
+      setupEvents();
+      checkNetwork();
+    }
+
+    function selectAPI(api) {
+      currentAPI = api;
+      localStorage.setItem('translate_api', api);
+      
+      document.querySelectorAll('.api-option').forEach(el => {
+        el.classList.toggle('active', el.dataset.api === api);
+      });
+
+      $('geminiSettings').style.display = api === 'gemini' ? 'block' : 'none';
+      $('baiduSettings').style.display = api === 'baidu' ? 'block' : 'none';
+      $('deeplxSettings').style.display = api === 'deeplx' ? 'block' : 'none';
+
+      if (api === 'gemini') {
+        $('geminiKey').value = apis.gemini.key;
+      } else if (api === 'baidu') {
+        $('baiduAppid').value = apis.baidu.appid;
+        $('baiduKey').value = apis.baidu.key;
+      } else if (api === 'deeplx') {
+        $('deeplxUrl').value = apis.deeplx.url;
+      }
+
+      updateSettingsIcon();
+      checkNetwork();
+    }
+
+    async function checkNetwork() {
+      statusDot.className = 'status-dot checking';
+      
+      if (currentAPI === 'deeplx') {
+        statusDot.className = 'status-dot online';
+        statusText.textContent = 'DeepLX - 无需 Key，直接可用';
+        return;
+      }
+
+      if (currentAPI === 'baidu') {
+        statusDot.className = 'status-dot online';
+        statusText.textContent = '百度翻译 - 国内可用';
+        return;
+      }
+
+      // Gemini 需要检查是否能访问 Google
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        await fetch('https://www.google.com/favicon.ico', { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
+        clearTimeout(timeout);
+        statusDot.className = 'status-dot online';
+        statusText.textContent = 'Google Gemini - 网络正常';
+      } catch (e) {
+        statusDot.className = 'status-dot';
+        statusText.textContent = 'Google Gemini - 需要代理（或切换到国内 API）';
+      }
+    }
+
+    function setupEvents() {
+      inputText.addEventListener('input', () => {
+        const count = inputText.value.length;
+        charCount.textContent = `字符：${count.toLocaleString()} / 50000`;
+      });
+
+      translateBtn.addEventListener('click', translate);
+      copyBtn.addEventListener('click', copyText);
+      copyOutputBtn.addEventListener('click', copyText);
+      swapBtn.addEventListener('click', swapLangs);
+      clearInputBtn.addEventListener('click', clearInput);
+      
+      settingsBtn.addEventListener('click', openSettings);
+      closeModalBtn.addEventListener('click', closeSettings);
+      cancelBtn.addEventListener('click', closeSettings);
+      saveSettingsBtn.addEventListener('click', saveSettings);
+      settingsModal.addEventListener('click', e => { if (e.target === settingsModal) closeSettings(); });
+      
+      themeBtn.addEventListener('click', toggleTheme);
+      clearHistoryBtn.addEventListener('click', clearHistory);
+
+      document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          if (!isTranslating) translate();
+        }
+        if (e.key === 'Escape') clearInput();
+      });
+    }
+
+    function clearInput() {
+      inputText.value = '';
+      charCount.textContent = '字符：0 / 50000';
+      outputText.innerHTML = '<div class="placeholder-icon">🌐</div><div>翻译结果将显示在这里</div>';
+      outputText.classList.add('placeholder');
+      inputText.focus();
+    }
+
+    function translate() {
+      const text = inputText.value.trim();
+      if (!text) { showToast('请输入内容', 'warning'); inputText.focus(); return; }
+
+      if (isTranslating) return;
+
+      const source = sourceLang.value;
+      const target = targetLang.value;
+      const cacheKey = `${currentAPI}:${source}:${target}:${text.slice(0, 500)}`;
+
+      if (translationCache.has(cacheKey)) {
+        lastTranslationResult = translationCache.get(cacheKey);
+        outputText.textContent = lastTranslationResult;
+        outputText.classList.remove('placeholder');
+        showToast('✓ 缓存加载', 'success');
+        return;
+      }
+
+      // 检查 API 配置
+      if (currentAPI === 'gemini' && (!apis.gemini.key || apis.gemini.key.length < 20)) {
+        showToast('请先配置 Gemini API Key', 'warning');
+        setTimeout(openSettings, 500);
+        return;
+      }
+      if (currentAPI === 'baidu' && (!apis.baidu.appid || !apis.baidu.key)) {
+        showToast('请先配置百度翻译 API', 'warning');
+        setTimeout(openSettings, 500);
+        return;
+      }
+
+      isTranslating = true;
+      abortController = new AbortController();
+      translateBtn.disabled = true;
+      translateBtn.innerHTML = '<span class="spinner"></span> 翻译中...';
+      outputText.classList.add('placeholder');
+      outputText.innerHTML = '<div style="display:flex;gap:8px;align-items:center;justify-content:center;height:200px;"><div class="spinner" style="width:24px;height:24px;border:3px solid var(--border-color);border-top-color:var(--accent-color);border-radius:50%;animation:spin 1s linear infinite;"></div><span style="color:var(--text-secondary);">正在翻译...</span></div>';
+
+      callAPI(text, source, target, abortController.signal)
+        .then(result => {
+          translationCache.set(cacheKey, result);
+          lastTranslationResult = result;
+          outputText.textContent = result;
+          outputText.classList.remove('placeholder');
+          addToHistory(text, result, source, target);
+          showToast('✓ 翻译完成', 'success');
+        })
+        .catch(error => {
+          console.error('翻译失败:', error);
+          let msg = error.message || '未知错误';
+          
+          if (msg.includes('Failed to fetch')) {
+            msg = '网络连接失败\n\n请检查:\n1. 网络是否连通\n2. 是否需要代理\n3. 或切换到百度翻译/DeepLX';
+          } else if (msg.includes('签名错误') || msg.includes('sign error')) {
+            msg = '百度 API 签名错误\n请检查 APP ID 和密钥是否正确';
+          } else if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
+            msg = 'API Key 无效\n请重新配置';
+          } else if (msg.includes('429') || msg.includes('限流')) {
+            msg = '⏳ 请求过于频繁\n\n已自动重试，如仍失败请:\n• 等待 1-2 分钟\n• 或切换到百度翻译/DeepLX';
+          } else if (msg.includes('timeout')) {
+            msg = '⏰ 连接超时\n请检查网络';
+          }
+          
+          showToast('❌ ' + msg, 'error');
+        })
+        .finally(() => {
+          isTranslating = false;
+          abortController = null;
+          translateBtn.disabled = false;
+          translateBtn.innerHTML = '🔄 翻译';
+        });
+    }
+
+    async function callAPI(text, source, target, signal) {
+      if (currentAPI === 'gemini') {
+        return callGeminiAPI(text, source, target, signal);
+      } else if (currentAPI === 'baidu') {
+        return callBaiduAPI(text, source, target, signal);
+      } else if (currentAPI === 'deeplx') {
+        return callDeepLXAPI(text, source, target, signal);
+      }
+    }
+
+    async function callGeminiAPI(text, source, target, signal) {
+      const sourceName = LANG_NAMES[source];
+      const targetName = LANG_NAMES[target];
+      const prompt = `Translate from ${sourceName} to ${targetName}. Output only translation:\n\n${text}`;
+      
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apis.gemini.key}`;
+      const payload = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.2, topP: 0.8, maxOutputTokens: 8192 }
+      };
+
+      // 智能重试机制
+      const maxRetries = 5;
+      let lastError = null;
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        console.log(`Gemini API 请求 (${attempt}/${maxRetries})...`);
+        
+        const timeoutId = setTimeout(() => abortController?.abort(), 90000);
+        
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal
+          });
+          
+          clearTimeout(timeoutId);
+          console.log(`响应状态：${res.status}`);
+          
+          if (!res.ok) {
+            const errText = await res.text().catch(() => 'Unknown error');
+            console.error('API 错误:', errText);
+            
+            // 429 限流：指数退避重试
+            if (res.status === 429) {
+              if (attempt < maxRetries) {
+                const waitTime = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s, 16s
+                console.log(`API 限流，等待 ${waitTime}ms 后重试...`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+                continue;
+              }
+              throw new Error('429 限流：请等待 1-2 分钟后重试');
+            }
+            
+            if (res.status === 400 && errText.includes('API_KEY')) {
+              throw new Error('API_KEY_INVALID');
+            }
+            
+            throw new Error(`API ${res.status}: ${errText}`);
+          }
+          
+          const data = await res.json();
+          console.log('API 响应:', data);
+          
+          if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+            console.warn('无翻译结果:', data);
+            throw new Error('无翻译结果');
+          }
+          
+          return data.candidates[0].content.parts[0].text.trim();
+          
+        } catch (e) {
+          clearTimeout(timeoutId);
+          lastError = e;
+          
+          console.error(`请求失败 (${attempt}/${maxRetries}):`, e);
+          
+          // 429 继续重试
+          if (e.message.includes('429') && attempt < maxRetries) {
+            continue;
+          }
+          
+          // 其他错误直接抛出
+          if (e.name === 'AbortError') throw new Error('timeout');
+          if (e.message.includes('Failed to fetch')) throw new Error('NETWORK');
+          if (e.message.includes('API_KEY')) throw new Error('API_KEY_INVALID');
+          throw e;
+        }
+      }
+      
+      throw lastError || new Error('Unknown error');
+    }
+
+    async function callBaiduAPI(text, source, target, signal) {
+      const appid = apis.baidu.appid;
+      const key = apis.baidu.key;
+      const from = BAIDU_LANG[source] || 'auto';
+      const to = BAIDU_LANG[target] || 'auto';
+      
+      const salt = Date.now();
+      const signStr = appid + text + salt + key;
+      
+      // 计算 MD5
+      const sign = await md5(signStr);
+      
+      const url = `https://fanyi-api.baidu.com/api/trans/vip/translate?q=${encodeURIComponent(text)}&from=${from}&to=${to}&appid=${appid}&salt=${salt}&sign=${sign}`;
+      
+      const timeoutId = setTimeout(() => abortController?.abort(), 30000);
+      
+      try {
+        const res = await fetch(url, { signal });
+        clearTimeout(timeoutId);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        
+        const data = await res.json();
+        
+        if (data.error_code) {
+          throw new Error(`百度 API 错误：${data.error_msg || data.error_code}`);
+        }
+        
+        if (!data.trans_result || !data.trans_result[0]?.dst) {
+          throw new Error('无翻译结果');
+        }
+        
+        return data.trans_result[0].dst;
+      } catch (e) {
+        clearTimeout(timeoutId);
+        if (e.name === 'AbortError') throw new Error('timeout');
+        throw e;
+      }
+    }
+
+    async function callDeepLXAPI(text, source, target, signal) {
+      const url = apis.deeplx.url.replace(/\/$/, '') + '/translate';
+      
+      const sourceLangCode = source === 'zh-CN' ? 'zh' : source === 'zh-TW' ? 'zh' : source;
+      const targetLangCode = target === 'zh-CN' ? 'zh' : target === 'zh-TW' ? 'zh' : target;
+      
+      const payload = {
+        text: text,
+        source_lang: sourceLangCode.toUpperCase(),
+        target_lang: targetLangCode.toUpperCase()
+      };
+
+      const timeoutId = setTimeout(() => abortController?.abort(), 30000);
+      
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!res.ok) {
+          const err = await res.text().catch(() => '');
+          throw new Error(`DeepLX ${res.status}: ${err}`);
+        }
+        
+        const data = await res.json();
+        return data.data || data.result || data.text || JSON.stringify(data);
+      } catch (e) {
+        clearTimeout(timeoutId);
+        if (e.name === 'AbortError') throw new Error('timeout');
+        throw e;
+      }
+    }
+
+    // 简单的 MD5 实现
+    async function md5(str) {
+      const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function copyText() {
+      const text = outputText.textContent;
+      if (!text || outputText.classList.contains('placeholder')) {
+        showToast('无内容可复制', 'warning');
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('✓ 已复制', 'success');
+      } catch {
+        const tmp = document.createElement('textarea');
+        tmp.value = text;
+        document.body.appendChild(tmp);
+        tmp.select();
+        document.execCommand('copy');
+        document.body.removeChild(tmp);
+        showToast('✓ 已复制', 'success');
+      }
+    }
+
+    function swapLangs() {
+      const temp = sourceLang.value;
+      sourceLang.value = targetLang.value;
+      targetLang.value = temp;
+      
+      if (!outputText.classList.contains('placeholder')) {
+        inputText.value = lastTranslationResult;
+        outputText.textContent = '翻译结果将显示在这里';
+        outputText.classList.add('placeholder');
+        lastTranslationResult = '';
+      }
+    }
+
+    function openSettings() {
+      selectAPI(currentAPI);
+      settingsModal.classList.add('active');
+      
+      const activeInput = currentAPI === 'gemini' ? 'geminiKey' : currentAPI === 'baidu' ? 'baiduAppid' : 'deeplxUrl';
+      $(activeInput).focus();
+    }
+
+    function closeSettings() {
+      settingsModal.classList.remove('active');
+    }
+
+    function saveSettings() {
+      if (currentAPI === 'gemini') {
+        apis.gemini.key = $('geminiKey').value.trim();
+        localStorage.setItem('gemini_api_key', apis.gemini.key);
+      } else if (currentAPI === 'baidu') {
+        apis.baidu.appid = $('baiduAppid').value.trim();
+        apis.baidu.key = $('baiduKey').value.trim();
+        localStorage.setItem('baidu_appid', apis.baidu.appid);
+        localStorage.setItem('baidu_key', apis.baidu.key);
+      } else if (currentAPI === 'deeplx') {
+        apis.deeplx.url = $('deeplxUrl').value.trim();
+        localStorage.setItem('deeplx_url', apis.deeplx.url);
+      }
+      
+      closeSettings();
+      showToast('✓ 设置已保存', 'success');
+      checkNetwork();
+    }
+
+    function updateSettingsIcon() {
+      let hasKey = false;
+      if (currentAPI === 'gemini' && apis.gemini.key && apis.gemini.key.length >= 20) hasKey = true;
+      if (currentAPI === 'baidu' && apis.baidu.appid && apis.baidu.key) hasKey = true;
+      if (currentAPI === 'deeplx') hasKey = true; // DeepLX 不需要 Key
+
+      if (hasKey) {
+        settingsBtn.classList.add('has-key');
+        settingsBtn.textContent = '✅';
+      } else {
+        settingsBtn.classList.remove('has-key');
+        settingsBtn.textContent = '⚙️';
+      }
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      $('themeBtn').textContent = next === 'dark' ? '☀️' : '🌙';
+    }
+
+    function addToHistory(source, target, sl, tl) {
+      history = history.filter(h => h.source !== source);
+      history.unshift({ source, target, sourceLang: sl, targetLang: tl, timestamp: Date.now() });
+      history = history.slice(0, 10);
+      localStorage.setItem('translation_history', JSON.stringify(history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      if (!history.length) {
+        historyList.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:32px;"><div style="font-size:32px;margin-bottom:8px;">📭</div>暂无历史记录</div>';
+        return;
+      }
+      
+      historyList.innerHTML = history.map((item, i) => {
+        const s = item.source.length > 30 ? item.source.slice(0, 30) + '...' : item.source;
+        const t = item.target.length > 30 ? item.target.slice(0, 30) + '...' : item.target;
+        return `<div class="history-item" data-index="${i}">
+          <span class="source-text">${escapeHtml(s)}</span>
+          <span class="arrow">→</span>
+          <span class="target-text">${escapeHtml(t)}</span>
+          <span class="langs">${LANG_NAMES[item.sourceLang]}→${LANG_NAMES[item.targetLang]}</span>
+        </div>`;
+      }).join('');
+      
+      historyList.querySelectorAll('.history-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const r = history[+item.dataset.index];
+          inputText.value = r.source;
+          sourceLang.value = r.sourceLang;
+          targetLang.value = r.targetLang;
+          lastTranslationResult = r.target;
+          outputText.textContent = r.target;
+          outputText.classList.remove('placeholder');
+          charCount.textContent = `字符：${r.source.length.toLocaleString()} / 50000`;
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      });
+    }
+
+    function clearHistory() {
+      history = [];
+      localStorage.removeItem('translation_history');
+      renderHistory();
+      showToast('历史记录已清空', 'success');
+    }
+
+    function escapeHtml(t) {
+      const d = document.createElement('div');
+      d.textContent = t;
+      return d.innerHTML;
+    }
+
+    function showToast(msg, type = 'success') {
+      toast.textContent = msg;
+      toast.className = `toast ${type} active`;
+      setTimeout(() => toast.classList.remove('active'), 4000);
+    }
+
+    init();
+  </script>
+</body>
+</html>

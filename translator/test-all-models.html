@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测试所有 Gemini 模型</title>
+  <style>
+    body { font-family: sans-serif; max-width: 1000px; margin: 40px auto; padding: 20px; background: #1a1a1a; color: #fff; }
+    .section { background: #2d2d2d; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    input, button, select { padding: 12px 16px; border-radius: 6px; border: 1px solid #404040; background: #1a1a1a; color: #fff; font-size: 14px; margin: 8px 0; }
+    input { width: 100%; box-sizing: border-box; }
+    button { background: #1a73e8; border: none; cursor: pointer; font-weight: 600; }
+    button:hover { background: #1557b0; }
+    button:disabled { opacity: 0.5; }
+    .log { background: #000; padding: 16px; border-radius: 6px; font-family: monospace; font-size: 12px; max-height: 600px; overflow-y: auto; white-space: pre-wrap; }
+    .success { color: #81c995; }
+    .error { color: #f28b82; }
+    .info { color: #8ab4f8; }
+    .warning { color: #fcc934; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #404040; padding: 10px; text-align: left; }
+    th { background: #383838; }
+    tr.success { background: rgba(129, 201, 149, 0.2); }
+    tr.error { background: rgba(242, 139, 130, 0.2); }
+  </style>
+</head>
+<body>
+  <h1>🧪 测试所有 Gemini 模型和 API 版本</h1>
+  
+  <div class="section">
+    <h3>1. API Key</h3>
+    <input type="password" id="apiKey" placeholder="输入你的 Gemini API Key">
+    <button onclick="saveKey()">💾 保存</button>
+  </div>
+
+  <div class="section">
+    <h3>2. 获取可用模型列表</h3>
+    <button onclick="listModels()" id="listBtn">📋 获取模型列表</button>
+    <div id="modelList"></div>
+  </div>
+
+  <div class="section">
+    <h3>3. 快速测试所有模型</h3>
+    <input type="text" id="testText" value="Hello">
+    <button onclick="testAllModels()" id="testAllBtn">🚀 测试所有模型</button>
+    <div id="testResults"></div>
+  </div>
+
+  <div class="section">
+    <h3>4. 详细日志</h3>
+    <div class="log" id="log"></div>
+    <button onclick="clearLog()" style="margin-top: 10px; background: #404040;">🗑 清空</button>
+  </div>
+
+  <script>
+    let apiKey = localStorage.getItem('gemini_api_key') || '';
+    
+    function log(msg, type = 'info') {
+      const time = new Date().toLocaleTimeString();
+      document.getElementById('log').innerHTML += `<span class="${type}">[${time}] ${msg}</span>\n`;
+      document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight;
+    }
+
+    function clearLog() { document.getElementById('log').innerHTML = ''; }
+
+    function saveKey() {
+      const key = document.getElementById('apiKey').value.trim();
+      if (!key) { log('请输入 API Key', 'error'); return; }
+      apiKey = key;
+      localStorage.setItem('gemini_api_key', key);
+      log('✓ API Key 已保存 (' + key.length + ' 字符)', 'success');
+      document.getElementById('apiKey').value = '';
+    }
+
+    async function listModels() {
+      const btn = document.getElementById('listBtn');
+      btn.disabled = true;
+      btn.textContent = '获取中...';
+
+      try {
+        // 测试 v1beta API
+        const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+        log(`请求：${url}`, 'info');
+        
+        const response = await fetch(url);
+        log(`响应状态：${response.status}`, response.ok ? 'success' : 'error');
+        
+        if (!response.ok) {
+          const error = await response.text();
+          log(`错误：${error}`, 'error');
+          return;
+        }
+
+        const data = await response.json();
+        const models = data.models || [];
+        log(`找到 ${models.length} 个模型`, 'success');
+        
+        let html = '<table><tr><th>模型名称</th><th>版本</th><th>支持的方法</th><th>generateContent</th></tr>';
+        
+        models.forEach(model => {
+          const name = model.name?.replace('models/', '') || 'Unknown';
+          const version = model.version || '-';
+          const methods = model.supportedGenerationMethods?.join(', ') || '-';
+          const hasGenerateContent = model.supportedGenerationMethods?.includes('generateContent') ? '✅' : '❌';
+          
+          if (name.includes('gemini')) {
+            html += `<tr class="${hasGenerateContent === '✅' ? 'success' : 'error'}">
+              <td>${name}</td>
+              <td>${version}</td>
+              <td>${methods}</td>
+              <td>${hasGenerateContent}</td>
+            </tr>`;
+          }
+        });
+        
+        html += '</table>';
+        document.getElementById('modelList').innerHTML = html;
+        
+      } catch (error) {
+        log(`错误：${error.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '📋 获取模型列表';
+      }
+    }
+
+    async function testAllModels() {
+      const text = document.getElementById('testText').value.trim();
+      const btn = document.getElementById('testAllBtn');
+      
+      if (!text) { log('请输入测试文本', 'error'); return; }
+      if (!apiKey) { log('请先配置 API Key', 'error'); return; }
+
+      btn.disabled = true;
+      btn.textContent = '测试中...';
+
+      // 测试不同的模型和 API 版本组合
+      const testConfigs = [
+        { model: 'gemini-pro', version: 'v1beta' },
+        { model: 'gemini-1.5-flash', version: 'v1beta' },
+        { model: 'gemini-1.5-flash-002', version: 'v1beta' },
+        { model: 'gemini-1.5-pro', version: 'v1beta' },
+        { model: 'gemini-2.0-flash-exp', version: 'v1beta' },
+        { model: 'gemini-exp-1206', version: 'v1beta' },
+      ];
+
+      let results = [];
+
+      for (const config of testConfigs) {
+        const { model, version } = config;
+        const startTime = Date.now();
+        const url = `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${apiKey}`;
+        
+        const payload = {
+          contents: [{ parts: [{ text: `Translate to Chinese: ${text}` }] }],
+          generationConfig: { maxOutputTokens: 50, temperature: 0 }
+        };
+
+        log(`\n测试：${model} (${version})`, 'info');
+
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          const elapsed = Date.now() - startTime;
+
+          if (response.ok) {
+            const data = await response.json();
+            const translation = data.candidates?.[0]?.content?.parts?.[0]?.text || '无结果';
+            log(`✓ ${model}: ${translation} (${elapsed}ms)`, 'success');
+            results.push({ model, version, status: 'success', time: elapsed, result: translation });
+          } else {
+            const error = await response.text();
+            log(`✗ ${model}: ${response.status} - ${error}`, 'error');
+            results.push({ model, version, status: 'error', time: elapsed, error });
+          }
+        } catch (error) {
+          log(`✗ ${model}: ${error.message}`, 'error');
+          results.push({ model, version, status: 'error', time: 0, error: error.message });
+        }
+
+        // 避免限流
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+
+      // 显示结果汇总
+      let html = '<h4>测试结果汇总</h4><table><tr><th>模型</th><th>API 版本</th><th>状态</th><th>耗时</th><th>结果</th></tr>';
+      
+      results.forEach(r => {
+        const statusClass = r.status === 'success' ? 'success' : 'error';
+        const statusText = r.status === 'success' ? '✅ 成功' : '❌ 失败';
+        html += `<tr class="${statusClass}">
+          <td>${r.model}</td>
+          <td>${r.version}</td>
+          <td>${statusText}</td>
+          <td>${r.time}ms</td>
+          <td>${r.result || r.error?.slice(0, 100) || '-'}</td>
+        </tr>`;
+      });
+      
+      html += '</table>';
+      document.getElementById('testResults').innerHTML = html;
+
+      btn.disabled = false;
+      btn.textContent = '🚀 测试所有模型';
+    }
+
+    if (apiKey) {
+      log('✓ 已加载保存的 API Key', 'success');
+    }
+  </script>
+</body>
+</html>

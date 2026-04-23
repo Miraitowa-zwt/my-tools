@@ -1,0 +1,8 @@
+# 示例URL列表
+# 每行一个URL，忽略以#开头的行
+https://www.baidu.com
+https://www.google.com
+https://github.com
+https://example.com
+# 这是一个不存在的链接，用于测试
+https://this-domain-does-not-exist-test.com

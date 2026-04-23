@@ -1,0 +1,21 @@
+{
+  "name": "bulk-article-extractor-web",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Web UI for bulk article content extraction",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["article", "extractor", "bulk", "web-ui", "readability"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@mozilla/readability": "^0.5.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "jsdom": "^24.0.0",
+    "node-fetch": "^3.3.2"
+  }
+}

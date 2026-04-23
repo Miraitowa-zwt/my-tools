@@ -1,0 +1,22 @@
+{
+  "name": "404-checker",
+  "version": "1.0.0",
+  "description": "Recursive 404 dead link crawler - 递归爬取检测死链",
+  "main": "crawler.js",
+  "scripts": {
+    "start": "node crawler.js",
+    "help": "node crawler.js --help",
+    "report": "node generate-report.js"
+  },
+  "keywords": ["404", "crawler", "dead-link", "broken-link", "seo"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "p-limit": "^3.1.0",
+    "robots-parser": "^3.0.1"
+  }
+}

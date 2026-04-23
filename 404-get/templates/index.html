@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全站 404 死链体检扫描器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+            min-height: 100vh;
+            padding: 60px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 40px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 12px;
+            color: #1d1d1f;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 17px;
+            color: #86868b;
+            margin-bottom: 40px;
+            font-weight: 400;
+        }
+
+        .form-group {
+            margin-bottom: 28px;
+        }
+
+        label {
+            display: block;
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            color: #1d1d1f;
+        }
+
+        input[type="url"] {
+            width: 100%;
+            padding: 14px 18px;
+            font-size: 17px;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            background-color: #ffffff;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        input[type="url"]:focus {
+            outline: none;
+            border-color: #0071e3;
+            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.2);
+        }
+
+        .button-group {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        button {
+            background-color: #0071e3;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 32px;
+            font-size: 17px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            min-width: 160px;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #0077ed;
+            transform: translateY(-1px);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background-color: #99b8e8;
+            cursor: not-allowed;
+        }
+
+        .status-section {
+            display: none;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #e6e6e6;
+        }
+
+        .status-section.active {
+            display: block;
+        }
+
+        .status-label {
+            font-size: 15px;
+            color: #86868b;
+            margin-bottom: 8px;
+        }
+
+        .current-url {
+            font-size: 16px;
+            background-color: #f5f5f7;
+            padding: 12px 16px;
+            border-radius: 10px;
+            word-break: break-all;
+            color: #1d1d1f;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            gap: 16px;
+        }
+
+        .stat-item {
+            text-align: center;
+            background-color: #f5f5f7;
+            padding: 16px;
+            border-radius: 12px;
+            flex: 1;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 600;
+            color: #0071e3;
+        }
+
+        .stat-text {
+            font-size: 14px;
+            color: #86868b;
+            margin-top: 4px;
+        }
+
+        .results-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .results-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        .download-btn {
+            background-color: #1d1d1f;
+            font-size: 15px;
+            min-width: auto;
+            padding: 10px 20px;
+        }
+
+        .download-btn:hover:not(:disabled) {
+            background-color: #424245;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        th {
+            background-color: #f5f5f7;
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 15px;
+            color: #1d1d1f;
+            border-bottom: 1px solid #e6e6e6;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e6e6e6;
+            word-break: break-all;
+            font-size: 14px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: #fafafa;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #86868b;
+            font-size: 17px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 30px 16px;
+            }
+
+            .card {
+                padding: 24px 20px;
+            }
+
+            h1 {
+                font-size: 32px;
+            }
+
+            .stats {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>全站 404 死链体检</h1>
+            <p class="subtitle">自动爬取全站，找出所有 404 死链</p>
+
+            <form id="scanForm">
+                <div class="form-group">
+                    <label for="startUrl">网站起始 URL</label>
+                    <input type="url" id="startUrl" placeholder="例如：https://example.com" required>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" id="startButton">开始扫描</button>
+                    <button type="button" id="stopButton" style="display: none; margin-left: 12px; background-color: #ff3b30">停止扫描</button>
+                </div>
+            </form>
+
+            <div class="status-section" id="statusSection">
+                <div class="status-label">当前正在抓取：</div>
+                <div class="current-url" id="currentUrl">-</div>
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-number" id="pagesScanned">0</div>
+                        <div class="stat-text">已扫描网页</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="linksChecked">0</div>
+                        <div class="stat-text">已检测链接</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="deadCount">0</div>
+                        <div class="stat-text">发现 404 死链</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-section" id="resultsSection">
+                <div class="results-header">
+                    <div class="results-title">扫描结果</div>
+                    <button class="download-btn" id="downloadBtn" onclick="downloadCSV()">下载 CSV</button>
+                </div>
+                <div id="resultsTableContainer">
+                    <div class="empty-state">暂无结果</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pollingInterval = null;
+        let currentDeadLinks = [];
+
+        document.getElementById('scanForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const startUrl = document.getElementById('startUrl').value.trim();
+            const startButton = document.getElementById('startButton');
+            const stopButton = document.getElementById('stopButton');
+            const statusSection = document.getElementById('statusSection');
+            const resultsSection = document.getElementById('resultsSection');
+
+            startButton.disabled = true;
+            startButton.textContent = '扫描中...';
+            stopButton.style.display = 'inline-block';
+            statusSection.classList.add('active');
+            resultsSection.classList.remove('active');
+
+            try {
+                const response = await fetch('/api/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        start_url: startUrl
+                    })
+                });
+
+                const data = await response.json();
+                if (!data.success) {
+                    alert(data.error);
+                    resetUI();
+                    return;
+                }
+
+                // 开始每秒轮询状态
+                pollingInterval = setInterval(pollStatus, 1000);
+            } catch (err) {
+                alert('启动扫描失败: ' + err.message);
+                resetUI();
+            }
+        });
+
+        document.getElementById('stopButton').addEventListener('click', async () => {
+            try {
+                await fetch('/api/stop', { method: 'POST' });
+            } catch (err) {
+                console.error('停止失败', err);
+            }
+            resetUI();
+        });
+
+        async function pollStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+
+                document.getElementById('currentUrl').textContent = data.current_url || '-';
+                document.getElementById('pagesScanned').textContent = data.total_pages_scanned;
+                document.getElementById('linksChecked').textContent = data.total_links_checked;
+                document.getElementById('deadCount').textContent = data.count;
+
+                currentDeadLinks = data.dead_links;
+
+                if (!data.is_running) {
+                    // 扫描完成
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                    showResults();
+                    resetUI();
+                }
+            } catch (err) {
+                console.error('轮询失败', err);
+            }
+        }
+
+        function resetUI() {
+            const startButton = document.getElementById('startButton');
+            const stopButton = document.getElementById('stopButton');
+            startButton.disabled = false;
+            startButton.textContent = '开始扫描';
+            stopButton.style.display = 'none';
+        }
+
+        function showResults() {
+            const resultsSection = document.getElementById('resultsSection');
+            const container = document.getElementById('resultsTableContainer');
+
+            resultsSection.classList.add('active');
+
+            if (currentDeadLinks.length === 0) {
+                container.innerHTML = '<div class="empty-state">恭喜！未发现任何 404 死链</div>';
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>404 死链地址</th>
+                            <th>来源页面</th>
+                            <th>重定向至</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            currentDeadLinks.forEach((link, index) => {
+                const redirect = link.redirect_url ? link.redirect_url : '-';
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><a href="${link.dead_url}" target="_blank" style="color: #ff3b30;">${link.dead_url}</a></td>
+                        <td><a href="${link.source_url}" target="_blank">${link.source_url}</a></td>
+                        <td>${redirect ? `<a href="${redirect}" target="_blank">${redirect}</a>` : '-'}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function downloadCSV() {
+            window.location.href = '/api/download';
+        }
+    </script>
+</body>
+</html>
