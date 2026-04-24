@@ -1,19 +1,21 @@
+// 基础字符串清洗：去除 HTML 标签，限制长度，防止 Prompt Injection
+const sanitize = (str, maxLen = 500) =>
+  (str == null ? '' : String(str)).replace(/[<>]/g, '').substring(0, maxLen);
+
 /**
  * 将抓取内容 + 用户输入变量拼装成完整 Prompt
  */
 function buildPrompt(variables, scrapedData, manualOverrides) {
-  const {
-    brand_name,
-    website_url,
-    collection_url,
-    collection_topic,
-    target_market,
-    keywords,
-    competitor_urls,
-    product_links,
-    brand_info,
-    output_language = 'English',
-  } = variables;
+  const brand_name       = sanitize(variables.brand_name);
+  const website_url      = sanitize(variables.website_url);
+  const collection_url   = sanitize(variables.collection_url);
+  const collection_topic = sanitize(variables.collection_topic);
+  const target_market    = sanitize(variables.target_market);
+  const keywords         = sanitize(variables.keywords, 1000);
+  const competitor_urls  = variables.competitor_urls  ?? [];
+  const product_urls     = variables.product_urls     ?? [];
+  const brand_notes      = sanitize(variables.brand_notes, 2000);
+
 
   // 构建抓取内容摘要
   let scrapedContext = '';
@@ -43,13 +45,14 @@ function buildPrompt(variables, scrapedData, manualOverrides) {
     if (scrapedData.products && scrapedData.products.length > 0) {
       scrapedContext += `\n\n## 产品详情页内容\n`;
       scrapedData.products.forEach((p, i) => {
+        const isPriority = product_urls.includes(p.url) ? '【Priority Product】' : '';
         if (p.success) {
-          scrapedContext += `\n### 产品 ${i + 1}：${p.title}（${p.url}）\n`;
+          scrapedContext += `\n### 产品 ${i + 1}${isPriority}：${p.title}（${p.url}）\n`;
           scrapedContext += `Meta描述：${p.metaDesc}\n`;
           scrapedContext += `H1：${p.h1}\n`;
           scrapedContext += `正文摘要：${p.bodyText}\n`;
         } else if (manualOverrides?.products?.[p.url]) {
-          scrapedContext += `\n### 产品 ${i + 1}（手动补充，${p.url}）\n`;
+          scrapedContext += `\n### 产品 ${i + 1}${isPriority}（手动补充，${p.url}）\n`;
           scrapedContext += manualOverrides.products[p.url] + '\n';
         }
       });
@@ -71,23 +74,50 @@ function buildPrompt(variables, scrapedData, manualOverrides) {
   }
 
   // 手动输入的产品链接列表
-  if (product_links && product_links.length > 0) {
-    scrapedContext += `\n\n## 产品链接列表（手动输入）\n`;
-    scrapedContext += `共 ${product_links.length} 个产品：\n`;
-    product_links.forEach((link, i) => {
+  if (product_urls && product_urls.length > 0) {
+    scrapedContext += `\n\n## 重点产品链接列表（[Priority Product]，必须在正文中重点呈现）\n`;
+    scrapedContext += `共 ${product_urls.length} 个重点产品：\n`;
+    product_urls.forEach((link, i) => {
       scrapedContext += `${i + 1}. ${link}\n`;
     });
   }
 
   const competitorInfo = competitor_urls && competitor_urls.length > 0
     ? competitor_urls.join(', ')
-    : '未提供（考虑到是集合页文案规划，不需要提及过多竞对信息）';
-
-  const productListInfo = product_links && product_links.length > 0
-    ? product_links.join(', ')
     : '未提供';
 
-  const prompt = `# 🧩 集合页文案生成 Prompt v3.2
+  const productListInfo = product_urls && product_urls.length > 0
+    ? product_urls.join(', ')
+    : '未提供';
+
+  // 限制 scrapedContext 总长度，防止超出 Gemini context window 并控制 API 费用
+  const MAX_CONTEXT_CHARS = 80000;
+  if (scrapedContext.length > MAX_CONTEXT_CHARS) {
+    scrapedContext = scrapedContext.substring(0, MAX_CONTEXT_CHARS) + '\n\n...[抓取内容已截断，超出上限]';
+  }
+
+  // ✅ Step 0 动态块：product_urls 非空时激活重点产品预检逻辑
+  const step0Block = product_urls.length > 0 ? `
+---
+
+#### Step 0：重点产品预检（内部执行）
+
+> 本步骤仅在 \`{{product_urls}}\` 已填写时执行；未填写则跳过，直接进入 Step 1。
+
+- 访问 \`{{product_urls}}\` 中的每个链接，完整填写产品信息卡（规范同 Step 1.2）
+- 标记这些产品为 \`[Priority Product]\`
+- 在后续所有步骤中，\`[Priority Product]\` 享有最高信息采集优先级
+- 在 Step 3 结构决策中，必须为 \`[Priority Product]\` 规划独立的正文呈现位置（独立 H3 或专属模块）
+- 在 Step 4 撰写时，\`[Priority Product]\` 的描述篇幅、细节深度必须显著高于普通产品
+` : `
+---
+
+#### Step 0：重点产品预检
+
+> \`{{product_urls}}\` 未填写，跳过本步骤，直接进入 Step 1。
+`;
+
+  const prompt = `# 🧩 集合页文案生成 Prompt v3.3
 
 ---
 
@@ -100,11 +130,10 @@ function buildPrompt(variables, scrapedData, manualOverrides) {
 | collection_url | 目标集合页 URL（必须访问） | ${collection_url} |
 | collection_topic | 集合页核心主题 | ${collection_topic} |
 | target_market | 目标市场/地区 | ${target_market} |
-| keywords | 关键词列表（5–10个，逗号分隔） | ${keywords} |
-| competitor_urls | 竞品集合页 URL（1–3个，选填） | ${competitorInfo} |
-| product_links | 具体产品链接（选填） | ${productListInfo} |
-| brand_info | 补充品牌信息（选填） | ${brand_info || '未提供'} |
-| output_language | 文案输出语言 | ${output_language} |
+| keywords | 目标关键词（3–10个，逗号分隔）| ${keywords} |
+| competitor_urls | 竞品集合页 URL（1–3个，选填）| ${competitorInfo} |
+| product_urls | 重点产品链接（选填；填写后必须纳入正文重点呈现）| ${productListInfo} |
+| brand_notes | 补充品牌信息（选填）| ${brand_notes || '未提供'} |
 
 ---
 
@@ -119,8 +148,8 @@ function buildPrompt(variables, scrapedData, manualOverrides) {
 你的工作方式是：
 **先在内部完成全量信息采集 → 事实检验 → 诊断结构 → 撰写正文 → 再次检验 → 输出完整文案。**
 
-> ⚠️ **执行原则：Step 1–4 的思考与执行步骤在内部完成，不输出任何中间过程报告。
-> 唯一必须输出的内容是：完整的集合页正文（${output_language} 版）+ 中文对照版 + 数据来源列表 + 最终自检清单。**
+> ⚠️ **执行原则：Step 0–4 的思考与执行步骤在内部完成，不输出任何中间过程报告。
+> 唯一必须输出的内容是：完整的集合页正文（英文版）+ 中文对照版 + 数据来源列表 + 最终自检清单。**
 
 ---
 
@@ -158,7 +187,7 @@ function buildPrompt(variables, scrapedData, manualOverrides) {
 
 以下所有步骤在内部完成，**不输出任何中间报告、过程记录或阶段性总结**。
 
----
+${step0Block}
 
 #### Step 1：全量信息采集（内部执行）
 
@@ -258,7 +287,7 @@ function buildPrompt(variables, scrapedData, manualOverrides) {
 
 #### Step 4：撰写正文草稿（内部执行）
 
-基于 Step 1–3 的全量信息，在内部完成 ${output_language} 正文草稿。
+ 基于 Step 1–3 的全量信息，在内部完成英文正文草稿。
 
 **写作原则：**
 - 首段禁止以 "Welcome to" / "Are you looking for" / 任何禁用词开头
@@ -268,6 +297,8 @@ function buildPrompt(variables, scrapedData, manualOverrides) {
 - 产品描述必须体现产品间的差异，帮助用户做选购决策
 - **标题层级规范：正文最高标题层级为 H2，其余标题逐级递减（H2 → H3 → H4），禁止使用 H1**
 - **关键词加粗规范：所有核心关键词（来自 Step 1.5 选定的 4–5 个核心词及 LSI 词）在正文中首次出现及重要语境下必须加粗（\`**keyword**\`），但同一关键词加粗次数不超过 3 次，避免视觉堆砌**
+- **\`[Priority Product]\` 呈现规范：描述篇幅不少于普通产品的 2 倍，必须包含完整参数、使用场景、差异化优势，置于其所在 H2/H3 模块的首位**
+- **竞品屏蔽规范：任何横向对比表述只能使用 "同类产品"、"market alternatives" 等中性措辞，禁止出现任何竞品品牌名称**
 
 ---
 
@@ -292,9 +323,9 @@ function buildPrompt(variables, scrapedData, manualOverrides) {
 
 ---
 
-#### 📝 输出模块一：集合页正文 — ${output_language} Version
+#### 📝 输出模块一：集合页正文 — English Version
 
-标注格式：\`## 📝 Collection Page Copy — ${output_language} Version\`
+标注格式：\`## 📝 Collection Page Copy — English Version\`
 
 **必须包含以下全部模块（缺一不可）：**
 
@@ -329,18 +360,18 @@ Trust & Safety	✅ / ❌	Q?
 
 #### 📝 输出模块二：中文对照版（供人工校验）
 
-紧跟 ${output_language} 版之后，以 \`---\` 分隔，标注：
+紧跟英文版之后，以 \`---\` 分隔，标注：
 \`## 📝 中文对照版（供人工校验）\`
 
 **规范：**
-- 逐段直译 ${output_language} 版，结构与 ${output_language} 版完全对应
-- 标题层级与 ${output_language} 版保持一致（H2 → H3 → H4）
+- 逐段直译英文版，结构与英文版完全对应
+- 标题层级与英文版保持一致（H2 → H3 → H4）
 - 产品型号、品牌名称保留英文原文
 - FAQ 直译，问题和答案均直译
 - FAQ 问题标题使用 H3
-- 语气与 ${output_language} 版一致，不调整为"小红书风格"
+- 语气与英文版一致，不调整为"小红书风格"
 - 不因翻译而压缩内容
-- 关键词加粗规则与 ${output_language} 版一致，对应中文关键词同样加粗
+- 关键词加粗规则与英文版一致，对应中文关键词同样加粗
 - 中文版同样包含 FAQ 完整性自检表（中文版标注）
 
 ---
@@ -374,11 +405,17 @@ Trust & Safety	✅ / ❌	Q?
 - [ ] H2-FAQ 已作为独立模块输出在正文末尾
 - [ ] FAQ 共 8–10 条，六类信息需求全部覆盖
 - [ ] FAQ 完整性自检表已输出，所有类别状态为 ✅
-- [ ] 中文对照版已输出，结构与 ${output_language} 版完全对应
+- [ ] 中文对照版已输出，结构与英文版完全对应
 - [ ] 核心关键词已在正文中加粗，同一词加粗次数 ≤ 3 次
 
+**重点产品呈现**
+- [ ] \`[Priority Product]\` 已在正文中独立呈现（如 \`{{product_urls}}\` 已填写）
+- [ ] \`[Priority Product]\` 描述篇幅不少于普通产品的 2 倍
+- [ ] \`[Priority Product]\` 包含完整参数、使用场景、差异化优势
+- [ ] \`[Priority Product]\` 置于其所在模块的首位
+
 **产品描述准确性**
-- [ ] 所有产品**产品描述准确性**
+- [ ] 所有产品参数与详情页数据一致
 - [ ] 所有产品参数与详情页数据一致
 - [ ] 对比表格中的数据维度均有完整来源
 - [ ] 产品描述体现了产品间的差异，非同质化表述
@@ -395,58 +432,9 @@ Trust & Safety	✅ / ❌	Q?
 - [ ] 内容未出现封闭式表述
 - [ ] 文案语气与品牌调性一致
 
----
-
-## 🚀 执行说明
-
-填写顶部所有 \`{{变量}}\` 后发送。
-
-**完整执行顺序：**
-
-[内部，不输出]
-Step 1.1 品牌信息采集（访问 \`${website_url}\`）
-↓
-Step 1.2 集合页产品矩阵采集
-（访问 \`${collection_url}\` → 列出所有产品 → 逐一访问详情页 → 填写产品信息卡）
-↓
-Step 1.3 产品矩阵横向分析
-↓
-Step 1.4 竞品内容分析（访问 \`${competitor_urls}\`，如有）
-↓
-Step 1.5 关键词意图分层
-↓
-Step 1.6 FAQ 候选问题库（≥12条，六类分组齐全）
-↓
-Step 1.7 采集阶段事实检验
-↓
-Step 2   目标受众画像
-↓
-Step 3   结构决策（行业判断 → 漏斗位置 → H2序列规划 → 关键词埋词位置）
-↓
-Step 4   撰写英文正文草稿
-（H2 为最高标题层级；核心关键词首次出现及重要语境下加粗）
-↓
-Step 4.7 输出前事实检验
-（H2-FAQ 缺失 → 禁止继续，返回 Step 4 补全）
-（标题层级违规 → 返回 Step 4 修正）
-（关键词未加粗 → 返回 Step 4 补全）
-
-[输出，必须完整]
-↓
-① 集合页正文 — ${output_language} Version
-H2主标题 + 首段 + 所有H2正文（子标题H3/H4逐级递减）+ H2-FAQ（8–10条，H3问题标题）+ FAQ完整性自检表
-↓
-② 中文对照版（供人工校验）
-逐段对应英文版，含FAQ及FAQ完整性自检表，标题层级与英文版一致
-↓
-③ 数据来源列表
-↓
-④ 最终自检清单
 
 
----
-
-> **四条铁律：**
+> **五条铁律：**
 >
 > 1. **FAQ 是正文的必要组成部分，不是可选附录。** 任何导致 FAQ 缺失的截断均视为输出未完成，必须继续补全。
 >
@@ -455,6 +443,66 @@ H2主标题 + 首段 + 所有H2正文（子标题H3/H4逐级递减）+ H2-FAQ（
 > 3. **内部步骤不输出，正文内容必须完整输出。** 两者不可互换，不可混淆。
 >
 > 4. **标题层级与关键词加粗是硬性格式要求。** H2 为最高层级，禁止使用 H1；核心关键词必须在正文中加粗，同一词加粗次数 ≤ 3 次。
+>
+> 5. **\`{{product_urls}}\` 填写即强制重点呈现。** 这些产品必须在正文中独立呈现，篇幅、深度、位置均须达标，不得与普通产品同等处理。
+
+---
+
+## 🚀 执行顺序流程图
+
+[内部，不输出]
+Step 0   重点产品预采集（仅 {{product_urls}} 已填写时执行）
+         访问所有 {{product_urls}} → 填写产品信息卡 → 标记为 [Priority Product]
+         ↓
+Step 1.1 品牌信息采集（访问 {{website_url}}）
+         ↓
+Step 1.2 集合页产品矩阵采集
+         访问 {{collection_url}} → 列出所有产品 → 逐一访问详情页 → 填写产品信息卡
+         ↓
+Step 1.3 产品矩阵横向分析
+         ↓
+Step 1.4 竞品内容缺口分析（仅 {{competitor_urls}} 已填写时执行；结果不输出）
+         ↓
+Step 1.5 关键词意图分层
+         ↓
+Step 1.6 FAQ 候选问题库（≥12条，五类分组齐全）
+         ↓
+Step 1.7 采集阶段事实检验
+         ↓
+Step 2   目标受众画像
+         ↓
+Step 3   结构决策
+         行业判断 → 漏斗位置 → [Priority Product] 位置规划 → H2序列规划 → 关键词埋词位置
+         ↓
+Step 4   撰写英文正文草稿
+         H2 为最高标题层级
+         核心关键词首次出现及重要语境下加粗
+         [Priority Product] 独立呈现，篇幅 ≥ 普通产品 2 倍
+         全文禁止出现竞品品牌名称
+         ↓
+Step 4.7 输出前事实检验
+         H2-FAQ 缺失             → 禁止继续，返回 Step 4 补全
+         标题层级违规             → 返回 Step 4 修正
+         关键词未加粗             → 返回 Step 4 补全
+         竞品品牌名出现           → 返回 Step 4 替换为中性表述
+         [Priority Product] 呈现不达标 → 返回 Step 4 补全
+
+[输出，必须完整]
+         ↓
+① 集合页正文 — English Version
+  H2主标题 + 首段 + 所有H2正文（子标题H3/H4逐级递减）
+  H2-FAQ（8–10条，H3问题标题，五类全覆盖）
+  FAQ完整性自检表
+         ↓
+② 中文对照版（供人工校验）
+  逐段对应英文版，含FAQ及FAQ完整性自检表
+  标题层级与英文版一致
+         ↓
+③ 数据来源列表
+         ↓
+④ 最终自检清单
+
+${scrapedContext}
 `;
 
   return prompt;
