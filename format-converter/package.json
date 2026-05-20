@@ -1,0 +1,9 @@
+{
+  "name": "format-converter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/converter.test.mjs && node tests/static-page.test.mjs && node tests/standalone-app.test.mjs"
+  }
+}

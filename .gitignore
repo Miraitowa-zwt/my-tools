@@ -1,2 +1,26 @@
 node_modules/
 .env
+
+# Runtime caches
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.fallow/
+.tmp/
+.uploads/
+
+# Logs and local outputs
+*.log
+debug_result.txt
+output/
+*/output/
+*.tmp
+
+# Local data exports
+attack*.csv
+product_links_*.csv
+
+# Archives
+*.zip
+*.rar
+*.7z

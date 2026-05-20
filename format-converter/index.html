@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>万能格式转换器</title>
+    <link rel="manifest" href="public/manifest.json">
+    <link rel="icon" href="public/icon.svg">
+    <link rel="stylesheet" href="src/styles/converter.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <h1>万能格式转换器</h1>
+      </header>
+
+      <section class="command-bar" aria-label="转换控制">
+        <div class="quick-samples" aria-label="示例">
+          <button data-sample="markdown">Markdown 示例</button>
+          <button data-sample="csv">CSV 示例</button>
+          <button data-sample="json">JSON 示例</button>
+          <button data-sample="html">HTML 示例</button>
+          <button data-sample="sql">SQL 示例</button>
+        </div>
+        <div class="format-strip">
+          <label>
+            输入
+            <select id="source-format"></select>
+          </label>
+          <span class="detected">识别 <strong id="detected-format">TEXT</strong></span>
+          <label>
+            输出
+            <select id="target-format"></select>
+          </label>
+          <button id="convert" class="primary">转换</button>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <section class="panel input-panel">
+          <div class="panel-head">
+            <div>
+              <p class="section-kicker">Input</p>
+              <h2>富文本输入</h2>
+            </div>
+          </div>
+          <div class="rich-capture is-primary">
+            <div class="rich-capture-head">
+              <div>
+                <strong>富文本粘贴区</strong>
+                <span>从企微文档、网页、Word、Shopify 类编辑器复制后粘贴到这里</span>
+              </div>
+              <mark>保留列表、表格、加粗、链接</mark>
+            </div>
+            <div id="rich-input" class="rich-input" contenteditable="true" aria-label="富文本粘贴区"></div>
+          </div>
+          <div class="source-editor">
+            <div class="source-editor-head">
+              <strong>HTML 源码 / 纯文本编辑区</strong>
+              <span>富文本会自动同步到这里；也可以手动编辑 HTML、Markdown、CSV、JSON 等内容。</span>
+            </div>
+            <textarea id="input" spellcheck="false" placeholder="这里主要用于查看或编辑源码。普通纯文本也可以粘贴到这里，但不会像富文本一样保留原始格式。"></textarea>
+          </div>
+        </section>
+
+        <aside class="convert-panel">
+          <div class="rail-head">
+            <p class="section-kicker">Actions</p>
+            <h2>操作</h2>
+          </div>
+          <div class="rail-actions">
+            <button id="swap" disabled>结果放回输入</button>
+            <button id="clear">清空</button>
+          </div>
+          <p id="message" class="message">准备就绪。</p>
+        </aside>
+
+        <section class="panel result-panel">
+          <div class="panel-head">
+            <div>
+              <p class="section-kicker">Output</p>
+              <h2>转换结果</h2>
+            </div>
+            <div class="actions">
+              <button id="copy" disabled>复制</button>
+              <button id="download" disabled>下载</button>
+              <button id="replace" disabled>替换输入</button>
+            </div>
+          </div>
+          <textarea id="output" readonly spellcheck="false" placeholder="转换结果会显示在这里。"></textarea>
+        </section>
+      </section>
+
+      <section class="preview-panel">
+        <div class="panel-head">
+          <div>
+            <p class="section-kicker">Preview</p>
+            <h2>HTML 预览</h2>
+            <p class="panel-note">查看转换后在页面里的显示效果。</p>
+          </div>
+        </div>
+        <iframe id="preview-frame" title="转换预览"></iframe>
+      </section>
+    </main>
+    <script src="src/app-standalone.js"></script>
+  </body>
+</html>
