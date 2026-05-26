@@ -1,0 +1,6 @@
+data/
+output/
+scripts/output/
+.pytest_cache/
+**/__pycache__/
+**/*.pyc

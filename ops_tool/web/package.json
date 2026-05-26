@@ -1,0 +1,9 @@
+{
+  "name": "ops-tool-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node ./server/index.js",
+    "test": "node --test ./server/taskQueue.test.js ./server/taskStore.test.js ./server/pythonRunner.test.js ./server/openAiCompatRunner.test.js ./server/publicPage.test.js ./server/publicApp.test.js ./server/publicStyles.test.js ./server/staticHeaders.test.js"
+  }
+}

@@ -24,3 +24,16 @@ product_links_*.csv
 *.zip
 *.rar
 *.7z
+
+# Portable tool local environments
+**/.venv/
+**/node_modules/
+**/__pycache__/
+**/*.pyc
+**/.cache/
+**/outputs/
+**/temp/
+**/tmp/
+
+# Ops Tool local task data
+ops_tool/data/

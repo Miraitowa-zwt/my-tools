@@ -1,4 +1,4 @@
-# my-tools
+﻿# my-tools
 
 个人本地工具箱。每个工具尽量独立成目录，保留自己的 README、依赖文件和测试脚本，避免把临时输出、日志、缓存文件提交到仓库。
 
@@ -6,29 +6,28 @@
 
 ```text
 my-tools/
-├── format-converter/          # 富文本与多格式转换工具
-├── collection-copy-tool/      # 集合页文案生成工具
-├── 301-404-checker/           # 301/404 链接检测
-├── 404-checker/               # 404 链接检测完整版
-├── 404-checker-simple/        # 404 链接检测简化版
-├── 404-get/                   # 404 页面获取工具
-├── article-extract-cli/       # 文章提取 CLI
+├── ops_tool/                 # Word 博客处理、sitemap 解析、Prompt/API 生成工具
+├── format-converter/         # 富文本与多格式转换工具
+├── collection-copy-tool/     # 集合页文案生成工具
+├── 301-404-checker/          # 301/404 链接检测
+├── 404-checker/              # 404 链接检测完整版
+├── 404-checker-simple/       # 404 链接检测简化版
+├── 404-get/                  # 404 页面获取工具
+├── article-extract-cli/      # 文章提取 CLI
 ├── bulk-article-extractor-web/# 批量文章提取 Web 版
-├── internal-link-checker/     # 站内链接检查
-├── shopify_blog_exporter/     # Shopify 博客导出
-├── translator/                # 翻译工具
-├── url-analyzer/              # URL 分析工具
+├── internal-link-checker/    # 站内链接检查
+├── shopify_blog_exporter/    # Shopify 博客导出
+├── translator/               # 翻译工具
+├── url-analyzer/             # URL 分析工具
 └── README.md
 ```
 
 ## 工具列表
 
-### 格式转换
-
-- [format-converter](format-converter/)  
-  本地富文本与多格式转换工具。支持富文本 / HTML 清理、Markdown、CSV/TSV、JSON/YAML/XML、SQL 等格式转换。可直接打开 `index.html` 使用。
-
 ### 内容与 SEO
+
+- [ops_tool](ops_tool/)  
+  本地运营辅助工具。支持选择多个 Word 文件，解析网站 sitemap，生成文章处理 Prompt 和 TD Prompt，也可以通过 OpenAI 兼容 API 直接生成结果。网页版本入口在 `ops_tool/web/`。
 
 - [collection-copy-tool](collection-copy-tool/)  
   产品集合页文案生成工具。
@@ -38,6 +37,11 @@ my-tools/
 
 - [bulk-article-extractor-web](bulk-article-extractor-web/)  
   批量文章提取 Web 工具。
+
+### 格式转换
+
+- [format-converter](format-converter/)  
+  本地富文本与多格式转换工具。支持富文本、HTML 清理、Markdown、CSV/TSV、JSON/YAML/XML、SQL 等格式转换。
 
 ### 链接检查
 

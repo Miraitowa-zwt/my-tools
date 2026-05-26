@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ops Tool</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="panel" aria-label="任务设置">
+        <h1>Ops Tool</h1>
+        <p class="muted">本地任务提交、顺序执行、结果可直接复制</p>
+        <form id="task-form" class="form">
+          <label>
+            <span>网站域名</span>
+            <input id="domain" name="domain" type="text" placeholder="https://example.com" required />
+          </label>
+          <label>
+            <span>CMS 模式</span>
+            <select id="cms-mode" name="cmsMode">
+              <option value="shopify">shopify</option>
+              <option value="wordpress">wordpress</option>
+              <option value="odoo">odoo</option>
+              <option value="custom">custom</option>
+            </select>
+          </label>
+          <label>
+            <span>生成方式</span>
+            <select id="generation-mode" name="generationMode">
+              <option value="prompt">仅生成 Prompt</option>
+              <option value="api">API 直接生成</option>
+            </select>
+          </label>
+          <div id="api-config" class="api-config" hidden>
+            <label>
+              <span>API 地址</span>
+              <input id="api-base-url" type="url" placeholder="https://api.example.com/v1" />
+            </label>
+            <label>
+              <span>API Key</span>
+              <input id="api-key" type="password" autocomplete="off" />
+            </label>
+            <label>
+              <span>模型名称</span>
+              <input id="api-model" type="text" placeholder="model-name" />
+            </label>
+          </div>
+          <label>
+            <span>Word 文件（可一次选择多个，可分批添加）</span>
+            <input id="docx-files" name="docxFiles" type="file" accept=".docx" multiple required />
+          </label>
+          <button id="clear-docx-files-button" type="button" class="secondary-button">清空 Word 文件</button>
+          <div id="docx-file-names" class="file-list muted">未选择文件</div>
+          <label>
+            <span>关键词配置文件</span>
+            <input id="keyword-file" name="keywordFile" type="file" accept=".json,.csv" />
+          </label>
+          <div id="keyword-file-name" class="file-list muted">未选择文件</div>
+          <button id="submit-button" type="submit">开始任务</button>
+        </form>
+      </section>
+
+      <section class="panel" aria-label="任务队列">
+        <div class="panel-header">
+          <h2>任务队列</h2>
+          <button id="refresh-button" type="button" class="secondary-button">刷新</button>
+        </div>
+        <div id="task-list" class="task-list"></div>
+      </section>
+
+      <section class="panel panel-wide" aria-label="任务详情">
+        <h2>任务详情</h2>
+        <div id="task-detail" class="task-detail empty-state">请选择一个任务</div>
+        <div id="copy-status" class="copy-status" role="status" aria-live="polite" aria-atomic="true"></div>
+      </section>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
